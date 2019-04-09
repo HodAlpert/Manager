@@ -29,6 +29,7 @@ public class ClientsListener implements Callable {
         logger.info("terminating");
         while (!clients.isEmpty()) {
             create_instance_if_needed();
+            monitor_tasks();
             Thread.sleep(common.time_to_sleep);
         }
         has_client_manager_finished = true;
@@ -46,7 +47,7 @@ public class ClientsListener implements Callable {
         while(!init.should_terminate.get()){
             while(message == null){
                 create_instance_if_needed();
-                Thread.sleep(common.time_to_sleep);
+                monitor_tasks();
                 message = sqs.recieve_message(queue_url, null, common.manager_main_thread_consumer);
             }
             String message_type = parse_body(message)[0];
@@ -75,7 +76,9 @@ public class ClientsListener implements Callable {
 
     private void handle_new_client_task(Message message) {
         logger.info("submitting new client");
-        init.executor.submit(new ReceiveNewClientTask(message));
+        Callable<Boolean> callable = new ReceiveNewClientTask(message);
+        Future<Boolean> future = init.executor.submit(callable);
+        tasks.put(future, callable);
     }
 
     private void create_worker(){
@@ -84,6 +87,7 @@ public class ClientsListener implements Callable {
     }
 
     private void monitor_tasks(){
+        logger.fine("monitoring messages");
         Enumeration<Future<Boolean>> futures = tasks.keys();
         while (futures.hasMoreElements()){
             Future<Boolean> task = futures.nextElement();
@@ -94,6 +98,7 @@ public class ClientsListener implements Callable {
                         else
                         {
                             Callable<Boolean> callable = tasks.remove(task);
+                            logger.fine("resubmitting task" + callable.toString());
                             Future<Boolean> new_task = executor.submit(callable);
                             tasks.put(new_task, callable);
                         }

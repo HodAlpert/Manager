@@ -8,10 +8,12 @@ import com.manager.utils.CompletedMission;
 import com.manager.utils.MissionTypes;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import static com.manager.common.common.manager_queue_url;
 import static com.manager.common.common.parse_body;
 import static com.manager.common.init.logger;
+import static com.manager.common.init.tasks;
 
 public class ReceiveNewDonePDFTask implements Callable<Boolean> {
     private String old_file_url;
@@ -42,7 +44,9 @@ public class ReceiveNewDonePDFTask implements Callable<Boolean> {
         logger.config("decrementing remaining tasks of client");
         if (client.getRemaining_tasks().decrementAndGet() == 0){
             logger.config("wrapping it up");
-          init.executor.submit(new WrapThisUp(client));
+            Callable<Boolean> callable = new WrapThisUp(client);
+            Future<Boolean> future = init.executor.submit(callable);
+            tasks.put(future, callable);
         }
         logger.config(client.getRemaining_tasks().get() + " tasks remains for client");
 

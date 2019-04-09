@@ -11,6 +11,7 @@ import com.manager.managers.SQSManager;
 
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import static com.manager.common.common.parse_body;
 import static com.manager.common.init.*;
@@ -41,7 +42,6 @@ public class WorkerListener implements Callable {
             Message message = null;
             while (message == null) {
                 message = sqs.recieve_message(common.worker_to_manager_queue_url, null, common.manager_main_thread_consumer);
-                Thread.sleep(common.time_to_sleep);
                 if (init.clients.isEmpty())
                     break;
             }
@@ -77,7 +77,6 @@ public class WorkerListener implements Callable {
             Message message = null;
             while (message == null) {
                 message = sqs.recieve_message(common.worker_to_manager_queue_url, null, common.manager_main_thread_consumer);
-                Thread.sleep(common.time_to_sleep);
                 if (init.should_terminate.get())
                     break;
             }
@@ -102,7 +101,9 @@ public class WorkerListener implements Callable {
      */
     private void handle_done_pdf_task(Message message) {
         logger.info(String.format("new Done-PDF-task accepted: %s", message.getBody()));
-        init.executor.submit(new ReceiveNewDonePDFTask(message));
+        Callable<Boolean> callable = new ReceiveNewDonePDFTask(message);
+        Future<Boolean> future = init.executor.submit(callable);
+        tasks.put(future, callable);
 
     }
 

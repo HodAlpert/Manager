@@ -12,9 +12,11 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import static com.manager.common.common.parse_body;
 import static com.manager.common.init.logger;
+import static com.manager.common.init.tasks;
 
 public class ReceiveNewClientTask implements Callable<Boolean> {
     private final String client_id;
@@ -79,6 +81,8 @@ public class ReceiveNewClientTask implements Callable<Boolean> {
         MissionTypes type = MissionTypes.valueOf(args[0]);
         String file_path = args[1];
         client.getRemaining_tasks().incrementAndGet();
-        init.executor.submit(new SendNewPDFTask(client_id, file_path, type));
+        Callable<Boolean> callable = new SendNewPDFTask(client_id, file_path, type);
+        Future<Boolean> future = init.executor.submit(callable);
+        tasks.put(future, callable);
     }
 }
