@@ -24,8 +24,8 @@ public class common {
     public static List<String> worker_script(){
         List<String> script = initialization_script();
 //        cloning git repo
-        script.add("sudo git clone https://github.com/hod246/distributed_system_programming_Ass1.git");
-        script.add("cd distributed_system_programming_Ass1/worker");
+        script.add("sudo git clone https://github.com/hod246/worker.git");
+        script.add("cd worker");
 //        building maven project
         script.add("sudo mvn compile package");
 //        running the manager script
